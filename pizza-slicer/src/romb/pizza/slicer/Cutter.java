@@ -3,60 +3,77 @@ package romb.pizza.slicer;
 import java.io.*;
 import java.util.ArrayList;
 
+class Slice {
+	int R1, R2, C1, C2;
+
+	public Slice(int r1, int c1, int r2, int c2) {
+		R1 = r1;
+		R2 = r2;
+		C1 = c1;
+		C2 = c2;
+	}
+
+	public int getSize() {
+		int result = 0;
+		int difR = R2 - R1 + 1;
+		int difC = C2 - C1 + 1;
+		result = difR * difC;
+		return result;
+	}
+
+	@Override
+	public String toString() {
+		return R1 + " " + C1 + " " + R2 + " " + C2;
+	}
+}
+
 public class Cutter {
-	static final String hash = "#";
-	static final String point = ".";
-	static final String PAINT_SQUARE =  "PAINT_SQUARE";
-	static final String PAINT_LINE =  "PAINT_LINE";
-	static final String ERASE_CELL =  "ERASE_CELL";
-	static int N, M;
-	static String[][] picture;
-	static ArrayList<String> commands = new ArrayList<String>();
-	
+	static final String MUSHROOM = "M";
+	static final String TOMATO = "T";
+	static int R, C, L, H;
+	static int noOfSlices = 0;
+	static String[][] pizza;
+	static ArrayList<Slice> slices = new ArrayList<>();
+
 	public static void main(String[] args) {
 		LoadData(args[0]);
-		paint();
+		slicing();
 		WriteData();
 	}
 
 	private static void WriteData() {
-		 // The name of the file to open.
-        String fileName = "commands.txt";
+		// The name of the file to open.
+		String fileName = "commands.txt";
 
-        try {
-            // Assume default encoding.
-            FileWriter fileWriter =
-                new FileWriter(fileName);
+		try {
+			// Assume default encoding.
+			FileWriter fileWriter = new FileWriter(fileName);
 
-            // Always wrap FileWriter in BufferedWriter.
-            BufferedWriter bufferedWriter =
-                new BufferedWriter(fileWriter);
+			// Always wrap FileWriter in BufferedWriter.
+			BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
 
-            // Note that write() does not automatically
-            // append a newline character.
-            bufferedWriter.write(String.format("%d\n", commands.size()));
-            for(int i=0; i<commands.size(); i++){
-            	bufferedWriter.write(String.format("%s\n", commands.get(i)));
-            }
+			// Note that write() does not automatically
+			// append a newline character.
+			bufferedWriter.write(String.format("%d\n", noOfSlices));
+			for (int i = 0; i < slices.size(); i++) {
+				bufferedWriter.write(String.format("%s\n", slices.get(i)));
+			}
 
-            // Always close files.
-            bufferedWriter.close();
-        }
-        catch(IOException ex) {
-            System.out.println(
-                "Error writing to file '"
-                + fileName + "'");
-            // Or we could just do this:
-            // ex.printStackTrace();
-        }
-		
+			// Always close files.
+			bufferedWriter.close();
+		} catch (IOException ex) {
+			System.out.println("Error writing to file '" + fileName + "'");
+			// Or we could just do this:
+			// ex.printStackTrace();
+		}
+
 	}
 
-	private static void paint() {
-		for (int i = 0; i < N; i++) {
-			for (int j = 0; j < M; j++) {
-				if(picture[i][j].equals(hash)){
-					commands.add(String.format("%s %d %d %d", "PAINT_SQUARE", i, j, 0));
+	private static void slicing() {
+		for (int i = 0; i < R; i++) {
+			for (int j = 0; j < C; j++) {
+				if (pizza[i][j].equals(MUSHROOM)) {
+
 				}
 			}
 		}
@@ -75,15 +92,17 @@ public class Cutter {
 
 			if ((line = bufferedReader.readLine()) != null) {
 				String[] rowCol = line.split(" ");
-				N = Integer.parseInt(rowCol[0]);
-				M = Integer.parseInt(rowCol[1]);
+				R = Integer.parseInt(rowCol[0]);
+				C = Integer.parseInt(rowCol[1]);
+				L = Integer.parseInt(rowCol[2]);
+				H = Integer.parseInt(rowCol[3]);
 			}
-			picture = new String[N][M];
+			pizza = new String[R][C];
 
-			for (int i = 0; i < N; i++) {
+			for (int i = 0; i < R; i++) {
 				if ((line = bufferedReader.readLine()) != null) {
-					for (int j = 0; j < M; j++) {
-						picture[i][j] = String.valueOf(line.charAt(j));
+					for (int j = 0; j < C; j++) {
+						pizza[i][j] = String.valueOf(line.charAt(j));
 					}
 				}
 			}
