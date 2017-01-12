@@ -30,8 +30,8 @@ class Slice {
 public class Cutter {
 	static final String MUSHROOM = "M";
 	static final String TOMATO = "T";
+	static final String SLICED = "#";
 	static int R, C, L, H;
-	static int noOfSlices = 0;
 	static String[][] pizza;
 	static ArrayList<Slice> slices = new ArrayList<>();
 
@@ -54,9 +54,11 @@ public class Cutter {
 
 			// Note that write() does not automatically
 			// append a newline character.
-			bufferedWriter.write(String.format("%d\n", noOfSlices));
+			bufferedWriter.write(String.format("%d\n", slices.size()));
+			System.out.println(slices.size());
 			for (int i = 0; i < slices.size(); i++) {
-				bufferedWriter.write(String.format("%s\n", slices.get(i)));
+				bufferedWriter.write(String.format("%s\n", slices.get(i).toString()));
+				System.out.println(slices.get(i).toString());
 			}
 
 			// Always close files.
@@ -72,8 +74,31 @@ public class Cutter {
 	private static void slicing() {
 		for (int i = 0; i < R; i++) {
 			for (int j = 0; j < C; j++) {
-				if (pizza[i][j].equals(MUSHROOM)) {
+				boolean haveM = false;
+				boolean haveT = false;
+				boolean isSliced = false;
 
+				int limit = (i + H - 1) > R ? R : (i + H - 1);
+
+				for (int ii = i; ii < limit; ++ii) {
+					if (MUSHROOM.equals(pizza[ii][j])) {
+						haveM = true;
+					}
+					if (TOMATO.equals(pizza[ii][j])) {
+						haveT = true;
+					}
+					if (SLICED.equals(pizza[ii][j])) {
+						isSliced = true;
+					}
+				}
+				if (!isSliced) {
+					if (haveT && haveM) {
+						for (int ii = i; ii < limit; ++ii) {
+							pizza[ii][j] = "#";
+						}
+						Slice s = new Slice(i, limit, j, j);
+						slices.add(s);
+					}
 				}
 			}
 		}
