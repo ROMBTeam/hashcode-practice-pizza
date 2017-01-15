@@ -37,7 +37,7 @@ public class Cutter {
 
 	public static void main(String[] args) {
 		LoadData(args[0]);
-		slicing();
+		new_slicing();
 		WriteData();
 	}
 
@@ -71,38 +71,100 @@ public class Cutter {
 
 	}
 
-	private static void slicing() {
+	private static void new_slicing() {
 		for (int i = 0; i < R; i++) {
 			for (int j = 0; j < C; j++) {
-				boolean haveM = false;
-				boolean haveT = false;
-				boolean isSliced = false;
-
-				int limit = (i + H - 1) > R ? R : (i + H - 1);
-
-				for (int ii = i; ii < limit; ++ii) {
-					if (MUSHROOM.equals(pizza[ii][j])) {
-						haveM = true;
-					}
-					if (TOMATO.equals(pizza[ii][j])) {
-						haveT = true;
-					}
-					if (SLICED.equals(pizza[ii][j])) {
-						isSliced = true;
-					}
-				}
-				if (!isSliced) {
-					if (haveT && haveM) {
-						for (int ii = i; ii < limit; ++ii) {
-							pizza[ii][j] = "#";
-						}
-						Slice s = new Slice(i, limit, j, j);
-						slices.add(s);
-					}
+				Slice nextSlice = getNextValidSlice(i, j);
+				if (nextSlice != null) {
+					slice(nextSlice);
 				}
 			}
 		}
 	}
+
+	private static void slice(Slice nextSlice) {
+		for (int i = nextSlice.R1; i <= nextSlice.R2; i++)
+			for (int j = nextSlice.C1; j <= nextSlice.C2; j++) {
+				pizza[i][j] = SLICED;
+			}
+		slices.add(nextSlice);
+	}
+
+	private static Slice getNextValidSlice(int row1, int column1) {
+		if (!SLICED.equals(pizza[row1][column1])) {
+			int maxColumns = column1 + H < C ? H : C - column1 - 1;
+			int maxRows = row1 + H < R ? H : R - row1 - 1;
+			for (int column2 = maxColumns; column2 > 0; column2--) {
+				for (int row2 = maxRows; row2 > 0; row2--) {
+					if (isValidSlice(row1, column1, row1 + row2, column1 + column2)) {
+						return new Slice(row1, column1, row1 + row2, column1 + column2);
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	private static boolean isValidSlice(int row1, int column1, int row2, int column2) {
+		if ((column2 - column1 + 1) * (row2 - row1 + 1) <= H && validIngredients(row1, column1, row2, column2))
+			return true;
+		return false;
+	}
+
+	private static boolean validIngredients(int row1, int column1, int row2, int column2) {
+		int countT = 0;
+		int countM = 0;
+		for (int i = row1; i <= row2; i++) {
+			for (int j = column1; j <= column2; j++) {
+				if (MUSHROOM.equals(pizza[i][j])) {
+					countM++;
+				}
+				if (TOMATO.equals(pizza[i][j])) {
+					countT++;
+				}
+				if (SLICED.equals(pizza[i][j])) {
+					return false;
+				}
+				if (countT >= L && countM >= L) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+//	private static void slicing() {
+//		for (int i = 0; i < R; i++) {
+//			for (int j = 0; j < C; j++) {
+//				boolean haveM = false;
+//				boolean haveT = false;
+//				boolean isSliced = false;
+//
+//				int limit = (i + H - 1) > R ? R : (i + H - 1);
+//
+//				for (int ii = i; ii < limit; ++ii) {
+//					if (MUSHROOM.equals(pizza[ii][j])) {
+//						haveM = true;
+//					}
+//					if (TOMATO.equals(pizza[ii][j])) {
+//						haveT = true;
+//					}
+//					if (SLICED.equals(pizza[ii][j])) {
+//						isSliced = true;
+//					}
+//				}
+//				if (!isSliced) {
+//					if (haveT && haveM) {
+//						for (int ii = i; ii < limit; ++ii) {
+//							pizza[ii][j] = "#";
+//						}
+//						Slice s = new Slice(i, limit, j, j);
+//						slices.add(s);
+//					}
+//				}
+//			}
+//		}
+//	}
 
 	static void LoadData(String fileName) {
 		// This will reference one line at a time
