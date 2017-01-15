@@ -2,6 +2,7 @@ package romb.pizza.slicer;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.List;
 
 class Slice {
 	int R1, R2, C1, C2;
@@ -34,6 +35,7 @@ public class Cutter {
 	static int R, C, L, H;
 	static String[][] pizza;
 	static ArrayList<Slice> slices = new ArrayList<>();
+	static String strategicIngredient = MUSHROOM;
 
 	public static void main(String[] args) {
 		LoadData(args[0]);
@@ -72,6 +74,8 @@ public class Cutter {
 	}
 
 	private static void new_slicing() {
+		calculateStrategicIngredient();
+
 		for (int i = 0; i < R; i++) {
 			for (int j = 0; j < C; j++) {
 				Slice nextSlice = getNextValidSlice(i, j);
@@ -79,6 +83,24 @@ public class Cutter {
 					slice(nextSlice);
 				}
 			}
+		}
+	}
+
+	private static void calculateStrategicIngredient() {
+		int countT = 0;
+		int countM = 0;
+		for (int i = 0; i < R; i++) {
+			for (int j = 0; j < C; j++) {
+				if (MUSHROOM.equals(pizza[i][j])) {
+					countM++;
+				}
+				if (TOMATO.equals(pizza[i][j])) {
+					countT++;
+				}
+			}
+		}
+		if (countT < countM) {
+			strategicIngredient = TOMATO;
 		}
 	}
 
@@ -91,18 +113,80 @@ public class Cutter {
 	}
 
 	private static Slice getNextValidSlice(int row1, int column1) {
+		List<Slice> slices = new ArrayList<Slice>();
 		if (!SLICED.equals(pizza[row1][column1])) {
 			int maxColumns = column1 + H < C ? H : C - column1 - 1;
 			int maxRows = row1 + H < R ? H : R - row1 - 1;
-			for (int column2 = maxColumns; column2 > 0; column2--) {
-				for (int row2 = maxRows; row2 > 0; row2--) {
+			for (int column2 = maxColumns; column2 >= 0; column2--) {
+				for (int row2 = maxRows; row2 >= 0; row2--) {
 					if (isValidSlice(row1, column1, row1 + row2, column1 + column2)) {
-						return new Slice(row1, column1, row1 + row2, column1 + column2);
+						slices.add(new Slice(row1, column1, row1 + row2, column1 + column2));
 					}
 				}
 			}
+			return optimalSlice(slices);
 		}
 		return null;
+	}
+
+	private static Slice optimalSlice(List<Slice> validSlices) {
+		if (validSlices.size() == 0)
+			return null;
+		List<Slice> slicesWithLeastStrategicIngredients = getSlicesWithLeastStrategicIngredients(validSlices);
+		Slice bestSlice = bigestSlice(slicesWithLeastStrategicIngredients);
+		return bestSlice;
+	}
+	
+	private static Slice smallestSlice(List<Slice> slicesWithLeastStrategicIngredients) {
+		Slice bestSlice = null;
+		int minSlice = Integer.MAX_VALUE;
+		for (Slice slice : slicesWithLeastStrategicIngredients) {
+			if ((slice.C2 - slice.C1 + 1) * (slice.R2 - slice.R1 + 1) < minSlice) {
+				bestSlice = slice;
+				minSlice = (slice.C2 - slice.C1 + 1) * (slice.R2 - slice.R1 + 1);
+			}
+		}
+		return bestSlice;
+	}
+
+	private static Slice bigestSlice(List<Slice> slicesWithLeastStrategicIngredients) {
+		Slice bestSlice = null;
+		int maxSlice = -1;
+		for (Slice slice : slicesWithLeastStrategicIngredients) {
+			if ((slice.C2 - slice.C1 + 1) * (slice.R2 - slice.R1 + 1) > maxSlice) {
+				bestSlice = slice;
+				maxSlice = (slice.C2 - slice.C1 + 1) * (slice.R2 - slice.R1 + 1);
+			}
+		}
+		return bestSlice;
+	}
+
+	private static List<Slice> getSlicesWithLeastStrategicIngredients(List<Slice> validSlices) {
+		List<Slice> strategicSlices = new ArrayList<Slice>();
+		int minIngredients = Integer.MAX_VALUE;
+		for (Slice slice : validSlices) {
+			int strategicIngredientsCount = countIngredients(slice, strategicIngredient);
+			if (strategicIngredientsCount < minIngredients) {
+				strategicSlices.clear();
+				minIngredients = strategicIngredientsCount;
+			}
+			if (strategicIngredientsCount == minIngredients) {
+				strategicSlices.add(slice);
+			}
+		}
+		return strategicSlices;
+	}
+
+	private static int countIngredients(Slice slice, String ingredient) {
+		int countIngredient = 0;
+		for (int i = slice.R1; i <= slice.R2; i++) {
+			for (int j = slice.C1; j <= slice.C2; j++) {
+				if (ingredient.equals(pizza[i][j])) {
+					countIngredient++;
+				}
+			}
+		}
+		return countIngredient;
 	}
 
 	private static boolean isValidSlice(int row1, int column1, int row2, int column2) {
@@ -125,46 +209,46 @@ public class Cutter {
 				if (SLICED.equals(pizza[i][j])) {
 					return false;
 				}
-				if (countT >= L && countM >= L) {
-					return true;
-				}
 			}
+		}
+		if (countT >= L && countM >= L) {
+			return true;
 		}
 		return false;
 	}
 
-//	private static void slicing() {
-//		for (int i = 0; i < R; i++) {
-//			for (int j = 0; j < C; j++) {
-//				boolean haveM = false;
-//				boolean haveT = false;
-//				boolean isSliced = false;
-//
-//				int limit = (i + H - 1) > R ? R : (i + H - 1);
-//
-//				for (int ii = i; ii < limit; ++ii) {
-//					if (MUSHROOM.equals(pizza[ii][j])) {
-//						haveM = true;
-//					}
-//					if (TOMATO.equals(pizza[ii][j])) {
-//						haveT = true;
-//					}
-//					if (SLICED.equals(pizza[ii][j])) {
-//						isSliced = true;
-//					}
-//				}
-//				if (!isSliced) {
-//					if (haveT && haveM) {
-//						for (int ii = i; ii < limit; ++ii) {
-//							pizza[ii][j] = "#";
-//						}
-//						Slice s = new Slice(i, limit, j, j);
-//						slices.add(s);
-//					}
-//				}
-//			}
-//		}
-//	}
+	// private static void slicing() {
+	// for (int i = 0; i < R; i++) {
+	// for (int j = 0; j < C; j++) {
+	// boolean haveM = false;
+	// boolean haveT = false;
+	// boolean isSliced = false;
+	//
+	// int limit = (i + H - 1) > R ? R : (i + H - 1);
+	//
+	// for (int ii = i; ii < limit; ++ii) {
+	// if (MUSHROOM.equals(pizza[ii][j])) {
+	// haveM = true;
+	// }
+	// if (TOMATO.equals(pizza[ii][j])) {
+	// haveT = true;
+	// }
+	// if (SLICED.equals(pizza[ii][j])) {
+	// isSliced = true;
+	// }
+	// }
+	// if (!isSliced) {
+	// if (haveT && haveM) {
+	// for (int ii = i; ii < limit; ++ii) {
+	// pizza[ii][j] = "#";
+	// }
+	// Slice s = new Slice(i, limit, j, j);
+	// slices.add(s);
+	// }
+	// }
+	// }
+	// }
+	// }
 
 	static void LoadData(String fileName) {
 		// This will reference one line at a time
