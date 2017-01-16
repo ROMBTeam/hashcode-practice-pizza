@@ -46,6 +46,7 @@ public class Cutter {
 		LoadData(args[0]);
 		new_slicing();
 		WriteData();
+		
 		WritePizza();
 	}
 
