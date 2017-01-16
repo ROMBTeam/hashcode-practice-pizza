@@ -1,6 +1,11 @@
 package romb.pizza.slicer;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,6 +46,27 @@ public class Cutter {
 		LoadData(args[0]);
 		new_slicing();
 		WriteData();
+		WritePizza();
+	}
+
+	private static void WritePizza() {
+		// The name of the file to open.
+		String fileName = "pizzaFiled.txt";
+		try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(fileName))) {
+
+			for (int i = 0; i < R; i++) {
+				for (int j = 0; j < C; j++) {
+					bufferedWriter.write(String.format("%s", pizza[i][j]));
+				}
+				bufferedWriter.write(String.format("\n"));
+			}
+
+		} catch (IOException ex) {
+			System.out.println("Error writing to file '" + fileName + "'");
+			// Or we could just do this:
+			// ex.printStackTrace();
+		}
+
 	}
 
 	private static void WriteData() {
@@ -136,7 +162,7 @@ public class Cutter {
 		Slice bestSlice = bigestSlice(slicesWithLeastStrategicIngredients);
 		return bestSlice;
 	}
-	
+
 	private static Slice smallestSlice(List<Slice> slicesWithLeastStrategicIngredients) {
 		Slice bestSlice = null;
 		int minSlice = Integer.MAX_VALUE;
