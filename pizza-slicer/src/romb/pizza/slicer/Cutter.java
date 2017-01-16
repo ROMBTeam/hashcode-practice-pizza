@@ -283,7 +283,7 @@ public class Cutter {
 		if (validSlices.size() == 0)
 			return null;
 		List<Slice> slicesWithLeastStrategicIngredients = getSlicesWithLeastStrategicIngredients(validSlices);
-		Slice bestSlice = bigestSlice(slicesWithLeastStrategicIngredients);
+		Slice bestSlice = smallestSlice(slicesWithLeastStrategicIngredients);
 		return bestSlice;
 	}
 
