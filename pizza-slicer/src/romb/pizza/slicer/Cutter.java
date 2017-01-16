@@ -20,11 +20,15 @@ class Slice {
 	}
 
 	public int getSize() {
-		int result = 0;
-		int difR = R2 - R1 + 1;
-		int difC = C2 - C1 + 1;
-		result = difR * difC;
-		return result;
+		return difR() * difC();
+	}
+
+	public int difC() {
+		return C2 - C1 + 1;
+	}
+
+	public int difR() {
+		return R2 - R1 + 1;
 	}
 
 	@Override
@@ -46,7 +50,7 @@ public class Cutter {
 		LoadData(args[0]);
 		new_slicing();
 		WriteData();
-		
+
 		WritePizza();
 	}
 
@@ -108,9 +112,128 @@ public class Cutter {
 				Slice nextSlice = getNextValidSlice(i, j);
 				if (nextSlice != null) {
 					slice(nextSlice);
+					slices.add(nextSlice);
 				}
 			}
 		}
+
+		inflateSlices();
+	}
+
+	private static void inflateSlices() {
+		slices.sort((s1, s2) -> -s1.getSize());
+		for (Slice slice : slices) {
+			inflate(slice);
+		}
+	}
+
+	private static void inflate(Slice slice) {
+		boolean inflated = false;
+		do {
+			inflated = false;
+			if (slice.R2 - slice.R1 > slice.C1 - slice.C2) {
+				if (canInflateR1(slice)) {
+					inflateR1(slice);
+					inflated = true;
+				} else if (canInflateR2(slice)) {
+					inflateR2(slice);
+					inflated = true;
+				} else if (canInflateC1(slice)) {
+					inflateC1(slice);
+					inflated = true;
+				} else if (canInflateC2(slice)) {
+					inflateC2(slice);
+					inflated = true;
+				}
+			} else {
+				if (canInflateC1(slice)) {
+					inflateC1(slice);
+					inflated = true;
+				} else if (canInflateC2(slice)) {
+					inflateC2(slice);
+					inflated = true;
+				} else if (canInflateR1(slice)) {
+					inflateR1(slice);
+					inflated = true;
+				} else if (canInflateR1(slice)) {
+					inflateR2(slice);
+					inflated = true;
+				}
+			}
+
+		} while (inflated);
+	}
+
+	private static void inflateC2(Slice slice) {
+		slice.C2++;
+		slice(slice);
+	}
+
+	private static boolean canInflateC2(Slice slice) {
+		if (slice.C2 + 1 < C && slice.getSize() + slice.difR() <= H) {
+			for (int i = slice.R1; i <= slice.R2; i++) {
+				if (SLICED.equals(pizza[i][slice.C2 + 1])) {
+					return false;
+				}
+			}
+		} else {
+			return false;
+		}
+		return true;
+	}
+
+	private static void inflateC1(Slice slice) {
+		slice.C1--;
+		slice(slice);
+	}
+
+	private static boolean canInflateC1(Slice slice) {
+		if (slice.C1 - 1 >= 0 && slice.getSize() + + slice.difR() <= H) {
+			for (int i = slice.R1; i <= slice.R2; i++) {
+				if (SLICED.equals(pizza[i][slice.C1 - 1])) {
+					return false;
+				}
+			}
+		} else {
+			return false;
+		}
+		return true;
+	}
+
+	private static void inflateR2(Slice slice) {
+		slice.R2++;
+		slice(slice);
+	}
+
+	private static boolean canInflateR2(Slice slice) {
+		if (slice.R2 + 1 < R && slice.getSize() + slice.difC() <= H) {
+			for (int j = slice.C1; j <= slice.C2; j++) {
+				if (SLICED.equals(pizza[slice.R2 + 1][j])) {
+					return false;
+				}
+			}
+		} else {
+			return false;
+		}
+		return true;
+	}
+
+	private static void inflateR1(Slice slice) {
+		slice.R1--;
+		slice(slice);
+	}
+
+	private static boolean canInflateR1(Slice slice) {
+		if (slice.R1 - 1 >= 0 && slice.getSize() + slice.difC() <= H) {
+			for (int j = slice.C1; j <= slice.C2; j++) {
+				if (SLICED.equals(pizza[slice.R1 - 1][j])) {
+					return false;
+				}
+			}
+		} else {
+			return false;
+		}
+		return true;
 	}
 
 	private static void calculateStrategicIngredient() {
@@ -136,7 +259,6 @@ public class Cutter {
 			for (int j = nextSlice.C1; j <= nextSlice.C2; j++) {
 				pizza[i][j] = SLICED;
 			}
-		slices.add(nextSlice);
 	}
 
 	private static Slice getNextValidSlice(int row1, int column1) {
@@ -146,8 +268,9 @@ public class Cutter {
 			int maxRows = row1 + H < R ? H : R - row1 - 1;
 			for (int column2 = maxColumns; column2 >= 0; column2--) {
 				for (int row2 = maxRows; row2 >= 0; row2--) {
-					if (isValidSlice(row1, column1, row1 + row2, column1 + column2)) {
-						slices.add(new Slice(row1, column1, row1 + row2, column1 + column2));
+					Slice slice = new Slice(row1, column1, row1 + row2, column1 + column2);
+					if (isValidSlice(slice)) {
+						slices.add(slice);
 					}
 				}
 			}
@@ -168,9 +291,9 @@ public class Cutter {
 		Slice bestSlice = null;
 		int minSlice = Integer.MAX_VALUE;
 		for (Slice slice : slicesWithLeastStrategicIngredients) {
-			if ((slice.C2 - slice.C1 + 1) * (slice.R2 - slice.R1 + 1) < minSlice) {
+			if (slice.getSize() < minSlice) {
 				bestSlice = slice;
-				minSlice = (slice.C2 - slice.C1 + 1) * (slice.R2 - slice.R1 + 1);
+				minSlice = slice.getSize();
 			}
 		}
 		return bestSlice;
@@ -180,9 +303,9 @@ public class Cutter {
 		Slice bestSlice = null;
 		int maxSlice = -1;
 		for (Slice slice : slicesWithLeastStrategicIngredients) {
-			if ((slice.C2 - slice.C1 + 1) * (slice.R2 - slice.R1 + 1) > maxSlice) {
+			if (slice.getSize() > maxSlice) {
 				bestSlice = slice;
-				maxSlice = (slice.C2 - slice.C1 + 1) * (slice.R2 - slice.R1 + 1);
+				maxSlice = slice.getSize();
 			}
 		}
 		return bestSlice;
@@ -216,17 +339,17 @@ public class Cutter {
 		return countIngredient;
 	}
 
-	private static boolean isValidSlice(int row1, int column1, int row2, int column2) {
-		if ((column2 - column1 + 1) * (row2 - row1 + 1) <= H && validIngredients(row1, column1, row2, column2))
+	private static boolean isValidSlice(Slice slice) {
+		if (slice.getSize() <= H && validIngredients(slice))
 			return true;
 		return false;
 	}
 
-	private static boolean validIngredients(int row1, int column1, int row2, int column2) {
+	private static boolean validIngredients(Slice slice) {
 		int countT = 0;
 		int countM = 0;
-		for (int i = row1; i <= row2; i++) {
-			for (int j = column1; j <= column2; j++) {
+		for (int i = slice.R1; i <= slice.R2; i++) {
+			for (int j = slice.C1; j <= slice.C2; j++) {
 				if (MUSHROOM.equals(pizza[i][j])) {
 					countM++;
 				}
