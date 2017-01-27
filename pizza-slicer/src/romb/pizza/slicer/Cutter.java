@@ -7,7 +7,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 class Slice {
 	int R1, R2, C1, C2;
@@ -43,29 +45,115 @@ public class Cutter {
 	static final String SLICED = "#";
 	static int R, C, L, H;
 	static String[][] pizza;
-	static ArrayList<Slice> slices = new ArrayList<>();
+	static List<String[][]> pizzas = new ArrayList<String[][]>();
+	static Map<ArrayList<Slice>, Long> standings = new HashMap<>();
 	static String strategicIngredient = MUSHROOM;
 
 	public static void main(String[] args) {
-		LoadData(args[0]);
-		new_slicing();
-		WriteData();
-
-		WritePizza();
+		loadData(args[0]);
+		createPizzas();
+		for (String[][] pizza : pizzas) {
+			ArrayList<Slice> slices = newSlicing(pizza);
+			long score = calculateScore(pizza);
+			standings.put(slices, new Long(score));
+		}
+		// for (String[][] pizza : pizzas) {
+		// writePizza(pizza);
+		// }
+		writeData();
 	}
 
-	private static void WritePizza() {
+	private static void createPizzas() {
+		pizzas.add(pizza);
+		String[][] oneHorizontalPizza = new String[R][C];
+		for (int i = 0; i < R / 2 + 1; i++) {
+			for (int j = 0; j < C; j++) {
+				oneHorizontalPizza[R - (i + 1)][j] = pizza[i][j];
+				oneHorizontalPizza[i][j] = pizza[R - (i + 1)][j];
+			}
+		}
+		pizzas.add(oneHorizontalPizza);
+		String[][] oneRotatedPizza = new String[C][R];
+		for (int i = 0; i < R; ++i) {
+			for (int j = 0; j < C; ++j) {
+				oneRotatedPizza[j][R - 1 - i] = pizza[i][j];
+			}
+		}
+		pizzas.add(oneRotatedPizza);
+		String[][] twoHorizontalPizza = new String[C][R];
+		for (int i = 0; i < C / 2 + 1; i++) {
+			for (int j = 0; j < R; j++) {
+				twoHorizontalPizza[C - (i + 1)][j] = oneRotatedPizza[i][j];
+				twoHorizontalPizza[i][j] = oneRotatedPizza[C - (i + 1)][j];
+			}
+		}
+		pizzas.add(twoHorizontalPizza);
+		String[][] twoRotatedPizza = new String[R][C];
+		for (int i = 0; i < C; ++i) {
+			for (int j = 0; j < R; ++j) {
+				twoRotatedPizza[j][C - 1 - i] = oneRotatedPizza[i][j];
+			}
+		}
+		pizzas.add(twoRotatedPizza);
+		String[][] threeHorizontalPizza = new String[R][C];
+		for (int i = 0; i < R / 2 + 1; i++) {
+			for (int j = 0; j < C; j++) {
+				threeHorizontalPizza[R - (i + 1)][j] = twoRotatedPizza[i][j];
+				threeHorizontalPizza[i][j] = twoRotatedPizza[R - (i + 1)][j];
+			}
+		}
+		pizzas.add(threeHorizontalPizza);
+		String[][] threeRotatedPizza = new String[C][R];
+		for (int i = 0; i < R; ++i) {
+			for (int j = 0; j < C; ++j) {
+				threeRotatedPizza[j][R - 1 - i] = twoRotatedPizza[i][j];
+			}
+		}
+		pizzas.add(threeRotatedPizza);
+		String[][] fourHorizontalPizza = new String[C][R];
+		for (int i = 0; i < C / 2 + 1; i++) {
+			for (int j = 0; j < R; j++) {
+				fourHorizontalPizza[C - (i + 1)][j] = threeRotatedPizza[i][j];
+				fourHorizontalPizza[i][j] = threeRotatedPizza[C - (i + 1)][j];
+			}
+		}
+		pizzas.add(fourHorizontalPizza);
+	}
+
+	private static long calculateScore(String[][] variantPizza) {
+		long lengthRow = variantPizza.length;
+		long lengthColumn = variantPizza[0].length;
+		long maxScore = lengthColumn * lengthRow;
+		long remainingElements = 0;
+		for (int i = 0; i < lengthRow; ++i) {
+			for (int j = 0; j < lengthColumn; ++j) {
+				if (MUSHROOM.equals(variantPizza[i][j])) {
+					remainingElements++;
+				}
+				if (TOMATO.equals(variantPizza[i][j])) {
+					remainingElements++;
+				}
+			}
+		}
+		return maxScore - remainingElements;
+	}
+
+	@SuppressWarnings("unused")
+	private static void writePizza(String[][] variantPizza) {
 		// The name of the file to open.
 		String fileName = "pizzaFiled.txt";
 		try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(fileName))) {
-
-			for (int i = 0; i < R; i++) {
-				for (int j = 0; j < C; j++) {
-					bufferedWriter.write(String.format("%s", pizza[i][j]));
+			int indexRow = variantPizza.length;
+			int indexColumn = variantPizza[0].length;
+			for (int i = 0; i < indexRow; i++) {
+				for (int j = 0; j < indexColumn; j++) {
+					bufferedWriter.write(String.format("%s", variantPizza[i][j]));
+					System.out.print(variantPizza[i][j] + " ");
 				}
 				bufferedWriter.write(String.format("\n"));
+				System.out.println();
 			}
-
+			System.out.println("-----------------------");
 		} catch (IOException ex) {
 			System.out.println("Error writing to file '" + fileName + "'");
 			// Or we could just do this:
@@ -74,28 +162,28 @@ public class Cutter {
 
 	}
 
-	private static void WriteData() {
+	private static void writeData() {
 		// The name of the file to open.
 		String fileName = "commands.txt";
 
-		try {
-			// Assume default encoding.
-			FileWriter fileWriter = new FileWriter(fileName);
+		long maxScore = Long.MIN_VALUE;
+		ArrayList<Slice> slices = null;
+		for (ArrayList<Slice> slice : standings.keySet()) {
+			if (standings.get(slice) >= maxScore) {
+				maxScore = standings.get(slice);
+				slices = slice;
+			}
+		}
 
-			// Always wrap FileWriter in BufferedWriter.
-			BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+		try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(fileName))) {
 
-			// Note that write() does not automatically
-			// append a newline character.
 			bufferedWriter.write(String.format("%d\n", slices.size()));
+
 			System.out.println(slices.size());
 			for (int i = 0; i < slices.size(); i++) {
 				bufferedWriter.write(String.format("%s\n", slices.get(i).toString()));
 				System.out.println(slices.get(i).toString());
 			}
-
-			// Always close files.
-			bufferedWriter.close();
 		} catch (IOException ex) {
 			System.out.println("Error writing to file '" + fileName + "'");
 			// Or we could just do this:
@@ -104,9 +192,9 @@ public class Cutter {
 
 	}
 
-	private static void new_slicing() {
+	private static ArrayList<Slice> newSlicing(String[][] variantPizza) {
+		ArrayList<Slice> slices = new ArrayList<>();
 		calculateStrategicIngredient();
-
 		for (int i = 0; i < R; i++) {
 			for (int j = 0; j < C; j++) {
 				Slice nextSlice = getNextValidSlice(i, j);
@@ -116,11 +204,11 @@ public class Cutter {
 				}
 			}
 		}
-
-		inflateSlices();
+		inflateSlices(slices);
+		return slices;
 	}
 
-	private static void inflateSlices() {
+	private static void inflateSlices(ArrayList<Slice> slices) {
 		slices.sort((s1, s2) -> -s1.getSize());
 		for (Slice slice : slices) {
 			inflate(slice);
@@ -188,7 +276,7 @@ public class Cutter {
 	}
 
 	private static boolean canInflateC1(Slice slice) {
-		if (slice.C1 - 1 >= 0 && slice.getSize() + + slice.difR() <= H) {
+		if (slice.C1 - 1 >= 0 && slice.getSize() + +slice.difR() <= H) {
 			for (int i = slice.R1; i <= slice.R2; i++) {
 				if (SLICED.equals(pizza[i][slice.C1 - 1])) {
 					return false;
@@ -301,7 +389,7 @@ public class Cutter {
 
 	private static Slice bigestSlice(List<Slice> slicesWithLeastStrategicIngredients) {
 		Slice bestSlice = null;
-		int maxSlice = -1;
+		int maxSlice = Integer.MAX_VALUE;
 		for (Slice slice : slicesWithLeastStrategicIngredients) {
 			if (slice.getSize() > maxSlice) {
 				bestSlice = slice;
@@ -367,50 +455,11 @@ public class Cutter {
 		return false;
 	}
 
-	// private static void slicing() {
-	// for (int i = 0; i < R; i++) {
-	// for (int j = 0; j < C; j++) {
-	// boolean haveM = false;
-	// boolean haveT = false;
-	// boolean isSliced = false;
-	//
-	// int limit = (i + H - 1) > R ? R : (i + H - 1);
-	//
-	// for (int ii = i; ii < limit; ++ii) {
-	// if (MUSHROOM.equals(pizza[ii][j])) {
-	// haveM = true;
-	// }
-	// if (TOMATO.equals(pizza[ii][j])) {
-	// haveT = true;
-	// }
-	// if (SLICED.equals(pizza[ii][j])) {
-	// isSliced = true;
-	// }
-	// }
-	// if (!isSliced) {
-	// if (haveT && haveM) {
-	// for (int ii = i; ii < limit; ++ii) {
-	// pizza[ii][j] = "#";
-	// }
-	// Slice s = new Slice(i, limit, j, j);
-	// slices.add(s);
-	// }
-	// }
-	// }
-	// }
-	// }
-
-	static void LoadData(String fileName) {
+	static void loadData(String fileName) {
 		// This will reference one line at a time
 		String line = null;
 
-		try {
-			// FileReader reads text files in the default encoding.
-			FileReader fileReader = new FileReader(fileName);
-
-			// Always wrap FileReader in BufferedReader.
-			BufferedReader bufferedReader = new BufferedReader(fileReader);
-
+		try (BufferedReader bufferedReader = new BufferedReader(new FileReader(fileName))) {
 			if ((line = bufferedReader.readLine()) != null) {
 				String[] rowCol = line.split(" ");
 				R = Integer.parseInt(rowCol[0]);
@@ -427,9 +476,6 @@ public class Cutter {
 					}
 				}
 			}
-
-			// Always close files.
-			bufferedReader.close();
 		} catch (FileNotFoundException ex) {
 			System.out.println("Unable to open file '" + fileName + "'");
 		} catch (IOException ex) {
