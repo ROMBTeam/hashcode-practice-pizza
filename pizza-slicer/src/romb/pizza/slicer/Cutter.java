@@ -39,6 +39,81 @@ class Slice {
 	}
 }
 
+class PizzaSlicer {
+	private String[][] _pizza;
+	ArrayList<Slice> _slices;
+	int R, C;
+
+	public PizzaSlicer(String[][] pizza) {
+		_pizza = pizza;
+		R = pizza.length;
+		C = pizza[0].length;
+	}
+
+	public String[][] getPizza() {
+		return _pizza;
+	}
+
+	public String[][] getTransformedPizza() {
+		return _pizza;
+	}
+
+	public void addSlice(Slice slice) {
+		_slices.add(slice);
+	}
+
+	public ArrayList<Slice> getTransformedSlices() {
+		return _slices;
+	}
+}
+
+class OneHorizontalSlicer extends PizzaSlicer {
+	String[][] _transformedPizza;
+
+	public OneHorizontalSlicer(String[][] pizza) {
+		super(pizza);
+		_transformedPizza = new String[R][C];
+		for (int i = 0; i < R / 2 + 1; i++) {
+			for (int j = 0; j < C; j++) {
+				_transformedPizza[R - (i + 1)][j] = pizza[i][j];
+				_transformedPizza[i][j] = pizza[R - (i + 1)][j];
+			}
+		}
+	}
+
+	public String[][] getTransformedPizza() {
+		return _transformedPizza;
+	}
+
+	public void addSlice(Slice slice) {
+		Slice tranformedSlice = new Slice(R - slice.R1 - 1, slice.C1, R - slice.R2 - 1, slice.C2);
+		_slices.add(tranformedSlice);
+	}
+}
+
+class OneRotatedSlicer extends PizzaSlicer {
+	String[][] _transformedPizza;
+
+	public OneRotatedSlicer(String[][] pizza) {
+		super(pizza);
+		_transformedPizza = new String[C][R];
+		for (int i = 0; i < R; ++i) {
+			for (int j = 0; j < C; ++j) {
+				_transformedPizza[j][R - 1 - i] = pizza[i][j];
+			}
+		}
+	}
+
+	public String[][] getTransformedPizza() {
+		return _transformedPizza;
+	}
+
+	public void addSlice(Slice slice) {
+		Slice tranformedSlice = new Slice(slice.C1, R - slice.R1 - 1, slice.C2, R - slice.R2 - 1);
+		_slices.add(tranformedSlice);
+	}
+}
+
 public class Cutter {
 	static final String MUSHROOM = "M";
 	static final String TOMATO = "T";
@@ -52,14 +127,11 @@ public class Cutter {
 	public static void main(String[] args) {
 		loadData(args[0]);
 		createPizzas();
-		for (String[][] pizza : pizzas) {
-			ArrayList<Slice> slices = newSlicing(pizza);
-			long score = calculateScore(pizza);
+		for (String[][] variantPizza : pizzas) {
+			ArrayList<Slice> slices = newSlicing(variantPizza);
+			long score = calculateScore(variantPizza);
 			standings.put(slices, new Long(score));
 		}
-		// for (String[][] pizza : pizzas) {
-		// writePizza(pizza);
-		// }
 		writeData();
 	}
 
@@ -193,58 +265,61 @@ public class Cutter {
 	}
 
 	private static ArrayList<Slice> newSlicing(String[][] variantPizza) {
+		// pizza = variantPizza;
+		// R = variantPizza.length;
+		// C = variantPizza[0].length;
 		ArrayList<Slice> slices = new ArrayList<>();
-		calculateStrategicIngredient();
-		for (int i = 0; i < R; i++) {
-			for (int j = 0; j < C; j++) {
-				Slice nextSlice = getNextValidSlice(i, j);
+		calculateStrategicIngredient(variantPizza);
+		for (int i = 0; i < variantPizza.length; i++) {
+			for (int j = 0; j < variantPizza[0].length; j++) {
+				Slice nextSlice = getNextValidSlice(i, j, variantPizza);
 				if (nextSlice != null) {
-					slice(nextSlice);
+					slice(nextSlice, variantPizza);
 					slices.add(nextSlice);
 				}
 			}
 		}
-		inflateSlices(slices);
+		inflateSlices(slices, variantPizza);
 		return slices;
 	}
 
-	private static void inflateSlices(ArrayList<Slice> slices) {
+	private static void inflateSlices(ArrayList<Slice> slices, String[][] variantPizza) {
 		slices.sort((s1, s2) -> -s1.getSize());
 		for (Slice slice : slices) {
-			inflate(slice);
+			inflate(slice, variantPizza);
 		}
 	}
 
-	private static void inflate(Slice slice) {
+	private static void inflate(Slice slice, String[][] variantPizza) {
 		boolean inflated = false;
 		do {
 			inflated = false;
 			if (slice.R2 - slice.R1 > slice.C1 - slice.C2) {
-				if (canInflateR1(slice)) {
-					inflateR1(slice);
+				if (canInflateR1(slice, variantPizza)) {
+					inflateR1(slice, variantPizza);
 					inflated = true;
-				} else if (canInflateR2(slice)) {
-					inflateR2(slice);
+				} else if (canInflateR2(slice, variantPizza)) {
+					inflateR2(slice, variantPizza);
 					inflated = true;
-				} else if (canInflateC1(slice)) {
-					inflateC1(slice);
+				} else if (canInflateC1(slice, variantPizza)) {
+					inflateC1(slice, variantPizza);
 					inflated = true;
-				} else if (canInflateC2(slice)) {
-					inflateC2(slice);
+				} else if (canInflateC2(slice, variantPizza)) {
+					inflateC2(slice, variantPizza);
 					inflated = true;
 				}
 			} else {
-				if (canInflateC1(slice)) {
-					inflateC1(slice);
+				if (canInflateC1(slice, variantPizza)) {
+					inflateC1(slice, variantPizza);
 					inflated = true;
-				} else if (canInflateC2(slice)) {
-					inflateC2(slice);
+				} else if (canInflateC2(slice, variantPizza)) {
+					inflateC2(slice, variantPizza);
 					inflated = true;
-				} else if (canInflateR1(slice)) {
-					inflateR1(slice);
+				} else if (canInflateR1(slice, variantPizza)) {
+					inflateR1(slice, variantPizza);
 					inflated = true;
-				} else if (canInflateR1(slice)) {
-					inflateR2(slice);
+				} else if (canInflateR1(slice, variantPizza)) {
+					inflateR2(slice, variantPizza);
 					inflated = true;
 				}
 			}
@@ -252,15 +327,15 @@ public class Cutter {
 		} while (inflated);
 	}
 
-	private static void inflateC2(Slice slice) {
+	private static void inflateC2(Slice slice, String[][] variantPizza) {
 		slice.C2++;
-		slice(slice);
+		slice(slice, variantPizza);
 	}
 
-	private static boolean canInflateC2(Slice slice) {
+	private static boolean canInflateC2(Slice slice, String[][] variantPizza) {
 		if (slice.C2 + 1 < C && slice.getSize() + slice.difR() <= H) {
 			for (int i = slice.R1; i <= slice.R2; i++) {
-				if (SLICED.equals(pizza[i][slice.C2 + 1])) {
+				if (SLICED.equals(variantPizza[i][slice.C2 + 1])) {
 					return false;
 				}
 			}
@@ -270,15 +345,15 @@ public class Cutter {
 		return true;
 	}
 
-	private static void inflateC1(Slice slice) {
+	private static void inflateC1(Slice slice, String[][] variantPizza) {
 		slice.C1--;
-		slice(slice);
+		slice(slice, variantPizza);
 	}
 
-	private static boolean canInflateC1(Slice slice) {
-		if (slice.C1 - 1 >= 0 && slice.getSize() + +slice.difR() <= H) {
+	private static boolean canInflateC1(Slice slice, String[][] variantPizza) {
+		if (slice.C1 - 1 >= 0 && slice.getSize() + slice.difR() <= H) {
 			for (int i = slice.R1; i <= slice.R2; i++) {
-				if (SLICED.equals(pizza[i][slice.C1 - 1])) {
+				if (SLICED.equals(variantPizza[i][slice.C1 - 1])) {
 					return false;
 				}
 			}
@@ -288,15 +363,15 @@ public class Cutter {
 		return true;
 	}
 
-	private static void inflateR2(Slice slice) {
+	private static void inflateR2(Slice slice, String[][] variantPizza) {
 		slice.R2++;
-		slice(slice);
+		slice(slice, variantPizza);
 	}
 
-	private static boolean canInflateR2(Slice slice) {
-		if (slice.R2 + 1 < R && slice.getSize() + slice.difC() <= H) {
+	private static boolean canInflateR2(Slice slice, String[][] variantPizza) {
+		if (slice.R2 + 1 < variantPizza.length && slice.getSize() + slice.difC() <= H) {
 			for (int j = slice.C1; j <= slice.C2; j++) {
-				if (SLICED.equals(pizza[slice.R2 + 1][j])) {
+				if (SLICED.equals(variantPizza[slice.R2 + 1][j])) {
 					return false;
 				}
 			}
@@ -306,15 +381,15 @@ public class Cutter {
 		return true;
 	}
 
-	private static void inflateR1(Slice slice) {
+	private static void inflateR1(Slice slice, String[][] variantPizza) {
 		slice.R1--;
-		slice(slice);
+		slice(slice, variantPizza);
 	}
 
-	private static boolean canInflateR1(Slice slice) {
+	private static boolean canInflateR1(Slice slice, String[][] variantPizza) {
 		if (slice.R1 - 1 >= 0 && slice.getSize() + slice.difC() <= H) {
 			for (int j = slice.C1; j <= slice.C2; j++) {
-				if (SLICED.equals(pizza[slice.R1 - 1][j])) {
+				if (SLICED.equals(variantPizza[slice.R1 - 1][j])) {
 					return false;
 				}
 			}
@@ -324,15 +399,15 @@ public class Cutter {
 		return true;
 	}
 
-	private static void calculateStrategicIngredient() {
+	private static void calculateStrategicIngredient(String[][] variantPizza) {
 		int countT = 0;
 		int countM = 0;
-		for (int i = 0; i < R; i++) {
-			for (int j = 0; j < C; j++) {
-				if (MUSHROOM.equals(pizza[i][j])) {
+		for (int i = 0; i < variantPizza.length; i++) {
+			for (int j = 0; j < variantPizza[0].length; j++) {
+				if (MUSHROOM.equals(variantPizza[i][j])) {
 					countM++;
 				}
-				if (TOMATO.equals(pizza[i][j])) {
+				if (TOMATO.equals(variantPizza[i][j])) {
 					countT++;
 				}
 			}
@@ -342,35 +417,36 @@ public class Cutter {
 		}
 	}
 
-	private static void slice(Slice nextSlice) {
+	private static void slice(Slice nextSlice, String[][] variantPizza) {
 		for (int i = nextSlice.R1; i <= nextSlice.R2; i++)
 			for (int j = nextSlice.C1; j <= nextSlice.C2; j++) {
-				pizza[i][j] = SLICED;
+				variantPizza[i][j] = SLICED;
 			}
 	}
 
-	private static Slice getNextValidSlice(int row1, int column1) {
+	private static Slice getNextValidSlice(int row1, int column1, String[][] variantPizza) {
 		List<Slice> slices = new ArrayList<Slice>();
-		if (!SLICED.equals(pizza[row1][column1])) {
-			int maxColumns = column1 + H < C ? H : C - column1 - 1;
-			int maxRows = row1 + H < R ? H : R - row1 - 1;
+		if (!SLICED.equals(variantPizza[row1][column1])) {
+			int maxColumns = column1 + H < variantPizza[0].length ? H : variantPizza[0].length - column1 - 1;
+			int maxRows = row1 + H < variantPizza.length ? H : variantPizza.length - row1 - 1;
 			for (int column2 = maxColumns; column2 >= 0; column2--) {
 				for (int row2 = maxRows; row2 >= 0; row2--) {
 					Slice slice = new Slice(row1, column1, row1 + row2, column1 + column2);
-					if (isValidSlice(slice)) {
+					if (isValidSlice(slice, variantPizza)) {
 						slices.add(slice);
 					}
 				}
 			}
-			return optimalSlice(slices);
+			return optimalSlice(slices, variantPizza);
 		}
 		return null;
 	}
 
-	private static Slice optimalSlice(List<Slice> validSlices) {
+	private static Slice optimalSlice(List<Slice> validSlices, String[][] variantPizza) {
 		if (validSlices.size() == 0)
 			return null;
-		List<Slice> slicesWithLeastStrategicIngredients = getSlicesWithLeastStrategicIngredients(validSlices);
+		List<Slice> slicesWithLeastStrategicIngredients = getSlicesWithLeastStrategicIngredients(validSlices,
+				variantPizza);
 		Slice bestSlice = smallestSlice(slicesWithLeastStrategicIngredients);
 		return bestSlice;
 	}
@@ -399,11 +475,12 @@ public class Cutter {
 		return bestSlice;
 	}
 
-	private static List<Slice> getSlicesWithLeastStrategicIngredients(List<Slice> validSlices) {
+	private static List<Slice> getSlicesWithLeastStrategicIngredients(List<Slice> validSlices,
+			String[][] variantPizza) {
 		List<Slice> strategicSlices = new ArrayList<Slice>();
 		int minIngredients = Integer.MAX_VALUE;
 		for (Slice slice : validSlices) {
-			int strategicIngredientsCount = countIngredients(slice, strategicIngredient);
+			int strategicIngredientsCount = countIngredients(slice, strategicIngredient, variantPizza);
 			if (strategicIngredientsCount < minIngredients) {
 				strategicSlices.clear();
 				minIngredients = strategicIngredientsCount;
@@ -415,11 +492,11 @@ public class Cutter {
 		return strategicSlices;
 	}
 
-	private static int countIngredients(Slice slice, String ingredient) {
+	private static int countIngredients(Slice slice, String ingredient, String[][] variantPizza) {
 		int countIngredient = 0;
 		for (int i = slice.R1; i <= slice.R2; i++) {
 			for (int j = slice.C1; j <= slice.C2; j++) {
-				if (ingredient.equals(pizza[i][j])) {
+				if (ingredient.equals(variantPizza[i][j])) {
 					countIngredient++;
 				}
 			}
@@ -427,24 +504,24 @@ public class Cutter {
 		return countIngredient;
 	}
 
-	private static boolean isValidSlice(Slice slice) {
-		if (slice.getSize() <= H && validIngredients(slice))
+	private static boolean isValidSlice(Slice slice, String[][] variantPizza) {
+		if (slice.getSize() <= H && validIngredients(slice, variantPizza))
 			return true;
 		return false;
 	}
 
-	private static boolean validIngredients(Slice slice) {
+	private static boolean validIngredients(Slice slice, String[][] variantPizza) {
 		int countT = 0;
 		int countM = 0;
 		for (int i = slice.R1; i <= slice.R2; i++) {
 			for (int j = slice.C1; j <= slice.C2; j++) {
-				if (MUSHROOM.equals(pizza[i][j])) {
+				if (MUSHROOM.equals(variantPizza[i][j])) {
 					countM++;
 				}
-				if (TOMATO.equals(pizza[i][j])) {
+				if (TOMATO.equals(variantPizza[i][j])) {
 					countT++;
 				}
-				if (SLICED.equals(pizza[i][j])) {
+				if (SLICED.equals(variantPizza[i][j])) {
 					return false;
 				}
 			}
